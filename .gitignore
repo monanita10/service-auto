@@ -1,0 +1,7 @@
+node_modules
+programari.db
+dist/
+.env
+build/
+frontend/.env
+backend/.env
