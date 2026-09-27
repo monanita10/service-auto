@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
 const crypto = require('crypto');
 const { Pool } = require('pg');
 
@@ -19,14 +18,8 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-
-
-
-
-
-
 async function trimiteEmail({ catre, subiect, text }) {
-  await fetch('https://api.brevo.com/v3/smtp/email', {
+  const raspuns = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -39,13 +32,14 @@ async function trimiteEmail({ catre, subiect, text }) {
       textContent: text
     })
   });
+
+  const rezultatText = await raspuns.text();
+  console.log('Brevo status:', raspuns.status, '| Răspuns:', rezultatText);
+
+  if (!raspuns.ok) {
+    throw new Error(`Brevo a răspuns cu eroare: ${raspuns.status} - ${rezultatText}`);
+  }
 }
-
-
-
-
-
-
 
 async function creeazaTabele() {
   await pool.query(`
@@ -95,7 +89,6 @@ function valideazaProgramare(date) {
   return erori;
 }
 
-
 async function existaSuprapunere(data, ora, excludeId = null) {
   let query = "SELECT ora FROM programari WHERE data = $1 AND status != 'anulat'";
   const params = [data];
@@ -114,8 +107,6 @@ async function existaSuprapunere(data, ora, excludeId = null) {
     return Math.abs(totalExistent - totalCerut) < 60;
   });
 }
-
-
 
 function autentifica(req, res, next) {
   const header = req.headers.authorization;
@@ -184,7 +175,6 @@ app.post('/api/uita-parola', async (req, res) => {
   res.json({ mesaj: 'Vei primi un email cu instrucțiuni.' });
 });
 
-
 app.post('/api/reseteaza-parola', async (req, res) => {
   const { token, parolaNoua } = req.body;
 
@@ -210,18 +200,16 @@ app.post('/api/reseteaza-parola', async (req, res) => {
   res.json({ mesaj: 'Parola a fost schimbată cu succes' });
 });
 
-
 app.post('/api/programari', autentifica, async (req, res) => {
   const erori = valideazaProgramare(req.body);
   if (erori.length > 0) return res.status(400).json({ eroare: erori.join('. ') });
 
   const { telefon, serviciu, data, ora } = req.body;
 
-
   const suprapunere = await existaSuprapunere(data, ora);
-if (suprapunere) {
-  return res.status(409).json({ eroare: 'Mecanicul are programul plin. Alege te rog altă oră.' });
-}
+  if (suprapunere) {
+    return res.status(409).json({ eroare: 'Mecanicul are programul plin. Alege te rog altă oră.' });
+  }
 
   const utilizator_id = req.utilizator.id;
   const inserare = await pool.query(
@@ -234,7 +222,7 @@ if (suprapunere) {
 
   try {
     await trimiteEmail({
-      catre: programare.email,
+      catre: utilizatorInfo.email,
       subiect: 'Programarea ta a fost înregistrată',
       text: `Bună, ${utilizatorInfo.nume}! Programarea ta pentru "${serviciu}" pe ${data} la ${ora} a fost înregistrată.`
     });
@@ -282,8 +270,6 @@ app.patch('/api/programari/:id/finalizeaza', autentifica, async (req, res) => {
   res.json({ mesaj: 'Programare marcată ca finalizată' });
 });
 
-
-
 app.patch('/api/programari/:id/anuleaza', autentifica, async (req, res) => {
   const { id } = req.params;
 
@@ -304,7 +290,7 @@ app.patch('/api/programari/:id/anuleaza', autentifica, async (req, res) => {
   if (req.utilizator.rol === 'admin') {
     try {
       await trimiteEmail({
-        catre: utilizatorInfo.email,
+        catre: programare.email,
         subiect: 'Programarea ta a fost anulată',
         text: `Bună, ${programare.nume}! Programarea ta pentru "${programare.serviciu}" din ${programare.data} a fost anulată de service. Te rugăm să ne contactezi pentru o nouă programare.`
       });
@@ -313,8 +299,6 @@ app.patch('/api/programari/:id/anuleaza', autentifica, async (req, res) => {
 
   res.json({ mesaj: 'Programare anulată' });
 });
-
-
 
 app.put('/api/programari/:id', autentifica, async (req, res) => {
   const { id } = req.params;
@@ -346,9 +330,9 @@ app.put('/api/programari/:id', autentifica, async (req, res) => {
   res.json({ mesaj: 'Programare actualizată' });
 });
 
-  app.get('/', (req, res) => {
-    res.json({ status: 'Serverul funcționează' });
-  });
+app.get('/', (req, res) => {
+  res.json({ status: 'Serverul funcționează' });
+});
 
 app.listen(PORT, () => {
   console.log(`Serverul rulează la http://localhost:${PORT}`);
