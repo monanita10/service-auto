@@ -20,8 +20,13 @@ const pool = new Pool({
 });
 
 
+
+
+
+
+
 async function trimiteEmail({ catre, subiect, text }) {
-  await fetch('https://api.brevo.com/v3/smtp/email', {
+  const raspuns = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -34,7 +39,16 @@ async function trimiteEmail({ catre, subiect, text }) {
       textContent: text
     })
   });
+
+  const rezultatText = await raspuns.text();
+  console.log('Brevo status:', raspuns.status, '| Răspuns:', rezultatText);
+
+  if (!raspuns.ok) {
+    throw new Error(`Brevo a răspuns cu eroare: ${raspuns.status} - ${rezultatText}`);
+  }
 }
+
+
 
 
 
