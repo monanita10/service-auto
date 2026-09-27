@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
 const crypto = require('crypto');
-const { Resend } = require('resend');
 const { Pool } = require('pg');
 
 const app = express();
@@ -19,7 +19,25 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+async function trimiteEmail({ catre, subiect, text }) {
+  await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': process.env.BREVO_API_KEY
+    },
+    body: JSON.stringify({
+      sender: { email: process.env.BREVO_EMAIL_VERIFICAT, name: 'AutoService' },
+      to: [{ email: catre }],
+      subject: subiect,
+      textContent: text
+    })
+  });
+}
+
+
+
 
 async function creeazaTabele() {
   await pool.query(`
@@ -148,10 +166,9 @@ app.post('/api/uita-parola', async (req, res) => {
 
   const linkResetare = `${req.headers.origin || process.env.URL_FRONTEND}/?resetare=${token}`;
   try {
-    await resend.emails.send({
-      from:'AutoService <onboarding@resend.dev>',
-      to: utilizator.email,
-      subject: 'Resetare parolă - AutoService',
+    await trimiteEmail({
+      catre: utilizator.email,
+      subiect: 'Resetare parolă - AutoService',
       text: `Bună, ${utilizator.nume}! Apasă pe acest link (valabil 1 oră): ${linkResetare}`
     });
   } catch (e) { console.error('Email netrimis:', e.message); }
@@ -208,10 +225,9 @@ if (suprapunere) {
   const utilizatorInfo = infoRezultat.rows[0];
 
   try {
-    await resend.emails.send({
-      from: 'AutoService <onboarding@resend.dev>',
-      to: utilizatorInfo.email,
-      subject: 'Programarea ta a fost înregistrată',
+    await trimiteEmail({
+      catre: programare.email,
+      subiect: 'Programarea ta a fost înregistrată',
       text: `Bună, ${utilizatorInfo.nume}! Programarea ta pentru "${serviciu}" pe ${data} la ${ora} a fost înregistrată.`
     });
   } catch (e) { console.error('Email netrimis:', e.message); }
@@ -248,10 +264,9 @@ app.patch('/api/programari/:id/finalizeaza', autentifica, async (req, res) => {
   const programare = rezultat.rows[0];
 
   try {
-    await resend.emails.send({
-      from: 'AutoService <onboarding@resend.dev>',
-      to: programare.email,
-      subject: 'Programarea ta a fost finalizată',
+    await trimiteEmail({
+      catre: programare.email,
+      subiect: 'Programarea ta a fost finalizată',
       text: `Bună, ${programare.nume}! Programarea ta pentru "${programare.serviciu}" din ${programare.data} a fost finalizată.`
     });
   } catch (e) { console.error('Email netrimis:', e.message); }
@@ -280,10 +295,9 @@ app.patch('/api/programari/:id/anuleaza', autentifica, async (req, res) => {
 
   if (req.utilizator.rol === 'admin') {
     try {
-      await resend.emails.send({
-        from: 'AutoService <onboarding@resend.dev>',
-        to: programare.email,
-        subject: 'Programarea ta a fost anulată',
+      await trimiteEmail({
+        catre: utilizatorInfo.email,
+        subiect: 'Programarea ta a fost anulată',
         text: `Bună, ${programare.nume}! Programarea ta pentru "${programare.serviciu}" din ${programare.data} a fost anulată de service. Te rugăm să ne contactezi pentru o nouă programare.`
       });
     } catch (e) { console.error('Email netrimis:', e.message); }
