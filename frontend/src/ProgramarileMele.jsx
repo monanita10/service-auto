@@ -6,6 +6,7 @@ function ProgramarileMele({ token }) {
   const [programari, setProgramari] = useState([]);
   const [editareId, setEditareId] = useState(null);
   const [dateEditare, setDateEditare] = useState({});
+  const [filtruStatus, setFiltruStatus] = useState('toate');
   const [eroare, setEroare] = useState('');
 
   useEffect(() => { incarcaProgramari(); }, []);
@@ -48,15 +49,25 @@ function ProgramarileMele({ token }) {
     setEditareId(null);
     incarcaProgramari();
   }
+      const programariFiltrate = programari.filter(p =>
+      filtruStatus === 'toate' || p.status === filtruStatus
+);
 
   return (
     <div className="admin-page">
-      <h2 style={{ marginBottom: 24 }}>Programările mele</h2>
+      <div className="antet-pagina">
+        <h2>Programările mele</h2>
+        <select value={filtruStatus} onChange={e => setFiltruStatus(e.target.value)}>
+          <option value="toate">Toate</option>
+          <option value="in asteptare">În așteptare</option>
+          <option value="finalizat">Finalizate</option>
+          <option value="anulat">Anulate</option>
+        </select>
+      </div>
 
-      {programari.length === 0 && <p className="stare-goala">Nu ai nicio programare încă.</p>}
-
+      {programariFiltrate.length === 0 && <p className="stare-goala">Nu ai nicio programare încă.</p>}
       <div className="lista-tichete">
-        {programari.map(p => (
+        {programariFiltrate.map(p => (
           <div key={p.id} className={`tichet ${p.status !== 'in asteptare' ? 'tichet-finalizat' : ''}`}>
             <div className="tichet-bara" />
             <div className="tichet-continut">

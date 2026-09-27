@@ -159,7 +159,7 @@ app.post('/api/uita-parola', async (req, res) => {
     });
   } catch (e) { console.error('Email netrimis:', e.message); }
 
-  res.json({ mesaj: 'Dacă adresa există, vei primi un email cu instrucțiuni.' });
+  res.json({ mesaj: 'Vei primi un email cu instrucțiuni.' });
 });
 
 

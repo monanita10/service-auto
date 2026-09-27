@@ -41,7 +41,7 @@ function PanouAdmin({ token }) {
       <div className="stats">
         <div className="stat">
           <span className="stat-numar">{programari.length}</span>
-          <span className="stat-eticheta">Total azi</span>
+          <span className="stat-eticheta">Total </span>
         </div>
         <div className="stat">
           <span className="stat-numar">{inAsteptare}</span>

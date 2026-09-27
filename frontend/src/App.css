@@ -247,6 +247,37 @@ body {
   font-weight: 500;
 }
 
+.antet-pagina {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.antet-pagina h2 {
+  margin: 0;
+}
+
+.antet-pagina select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .antet-pagina {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .antet-pagina select {
+    width: 100%;
+  }
+}
+
 /* --- Tichete & Status --- */
 
 .ticket {
