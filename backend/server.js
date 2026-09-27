@@ -4,7 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { Pool } = require('pg');
 
 const app = express();
@@ -19,10 +19,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const transportator = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PAROLA }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function creeazaTabele() {
   await pool.query(`
@@ -142,7 +139,7 @@ app.post('/api/uita-parola', async (req, res) => {
   const rezultat = await pool.query('SELECT * FROM utilizatori WHERE email = $1', [email]);
   const utilizator = rezultat.rows[0];
 
-  if (!utilizator) return res.json({ mesaj: 'Dacă adresa există, vei primi un email cu instrucțiuni.' });
+  if (!utilizator) return res.json({ mesaj: 'Vei primi un email cu instrucțiuni.' });
 
   const token = crypto.randomBytes(32).toString('hex');
   const expira = Date.now() + 1000 * 60 * 60;
@@ -151,8 +148,9 @@ app.post('/api/uita-parola', async (req, res) => {
 
   const linkResetare = `${req.headers.origin || process.env.URL_FRONTEND}/?resetare=${token}`;
   try {
-    await transportator.sendMail({
-      from: process.env.EMAIL_USER,
+    
+    await resend.emails.send({
+      from:'AutoService <onboarding@resend.dev>',
       to: utilizator.email,
       subject: 'Resetare parolă - AutoService',
       text: `Bună, ${utilizator.nume}! Apasă pe acest link (valabil 1 oră): ${linkResetare}`
@@ -211,8 +209,8 @@ if (suprapunere) {
   const utilizatorInfo = infoRezultat.rows[0];
 
   try {
-    await transportator.sendMail({
-      from: process.env.EMAIL_USER,
+    await resend.emails.send({
+      from: 'AutoService <onboarding@resend.dev>',
       to: utilizatorInfo.email,
       subject: 'Programarea ta a fost înregistrată',
       text: `Bună, ${utilizatorInfo.nume}! Programarea ta pentru "${serviciu}" pe ${data} la ${ora} a fost înregistrată.`
@@ -251,8 +249,8 @@ app.patch('/api/programari/:id/finalizeaza', autentifica, async (req, res) => {
   const programare = rezultat.rows[0];
 
   try {
-    await transportator.sendMail({
-      from: process.env.EMAIL_USER,
+    await resend.emails.send({
+      from: 'AutoService <onboarding@resend.dev>',
       to: programare.email,
       subject: 'Programarea ta a fost finalizată',
       text: `Bună, ${programare.nume}! Programarea ta pentru "${programare.serviciu}" din ${programare.data} a fost finalizată.`
@@ -281,11 +279,10 @@ app.patch('/api/programari/:id/anuleaza', autentifica, async (req, res) => {
 
   await pool.query("UPDATE programari SET status = 'anulat' WHERE id = $1", [id]);
 
-  // trimitem email doar dacă ADMINUL anulează — dacă anulează clientul singur, deja știe
   if (req.utilizator.rol === 'admin') {
     try {
-      await transportator.sendMail({
-        from: process.env.EMAIL_USER,
+      await resend.emails.send({
+        from: 'AutoService <onboarding@resend.dev>',
         to: programare.email,
         subject: 'Programarea ta a fost anulată',
         text: `Bună, ${programare.nume}! Programarea ta pentru "${programare.serviciu}" din ${programare.data} a fost anulată de service. Te rugăm să ne contactezi pentru o nouă programare.`
