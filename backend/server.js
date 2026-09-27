@@ -359,3 +359,17 @@ app.put('/api/programari/:id', autentifica, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Serverul rulează la http://localhost:${PORT}`);
 });
+
+
+app.get('/test-email', async (req, res) => {
+  try {
+    await trimiteEmail({
+      catre: process.env.BREVO_EMAIL_VERIFICAT,
+      subiect: 'Test email',
+      text: 'Dacă vezi asta, funcționează!'
+    });
+    res.json({ mesaj: 'Trimis cu succes' });
+  } catch (e) {
+    res.status(500).json({ eroare: e.message });
+  }
+});
