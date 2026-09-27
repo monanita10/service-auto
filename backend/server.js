@@ -26,7 +26,7 @@ const pool = new Pool({
 
 
 async function trimiteEmail({ catre, subiect, text }) {
-  const raspuns = await fetch('https://api.brevo.com/v3/smtp/email', {
+  await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -39,14 +39,8 @@ async function trimiteEmail({ catre, subiect, text }) {
       textContent: text
     })
   });
-
-  const rezultatText = await raspuns.text();
-  console.log('Brevo status:', raspuns.status, '| Răspuns:', rezultatText);
-
-  if (!raspuns.ok) {
-    throw new Error(`Brevo a răspuns cu eroare: ${raspuns.status} - ${rezultatText}`);
-  }
 }
+
 
 
 
@@ -358,18 +352,4 @@ app.put('/api/programari/:id', autentifica, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Serverul rulează la http://localhost:${PORT}`);
-});
-
-
-app.get('/test-email', async (req, res) => {
-  try {
-    await trimiteEmail({
-      catre: process.env.BREVO_EMAIL_VERIFICAT,
-      subiect: 'Test email',
-      text: 'Dacă vezi asta, funcționează!'
-    });
-    res.json({ mesaj: 'Trimis cu succes' });
-  } catch (e) {
-    res.status(500).json({ eroare: e.message });
-  }
 });
