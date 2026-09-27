@@ -148,7 +148,6 @@ app.post('/api/uita-parola', async (req, res) => {
 
   const linkResetare = `${req.headers.origin || process.env.URL_FRONTEND}/?resetare=${token}`;
   try {
-    
     await resend.emails.send({
       from:'AutoService <onboarding@resend.dev>',
       to: utilizator.email,
@@ -324,6 +323,10 @@ app.put('/api/programari/:id', autentifica, async (req, res) => {
   );
   res.json({ mesaj: 'Programare actualizată' });
 });
+
+  app.get('/', (req, res) => {
+    res.json({ status: 'Serverul funcționează' });
+  });
 
 app.listen(PORT, () => {
   console.log(`Serverul rulează la http://localhost:${PORT}`);
